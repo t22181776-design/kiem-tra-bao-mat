@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiOS v2.0 - Virtual Desktop</title>
+    <title>SYSTEM_CRITICAL_ERROR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500;700&display=swap');
+
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.4);
-            --accent: #3b82f6;
+            --hacker-green: #00ff41;
+            --danger-red: #ff0000;
         }
 
         body, html {
@@ -17,532 +18,250 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+            background: #000;
+            font-family: 'Fira Code', monospace;
+            color: var(--hacker-green);
+            /* Con trỏ chuột hacker */
+            cursor: crosshair;
+        }
+
+        /* Ngăn chặn bôi đen văn bản */
+        * {
             user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            opacity: 0.25;
         }
 
         #desktop {
             position: relative;
             width: 100%;
             height: 100%;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, 90px);
-            grid-template-rows: repeat(auto-fill, 100px);
-            grid-auto-flow: column;
-            gap: 15px;
             z-index: 1;
+            padding: 20px;
         }
 
-        .icon {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            cursor: pointer;
-            border-radius: 12px;
-            transition: all 0.2s;
-            text-align: center;
-            font-size: 0.75rem;
-            padding: 10px 5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        .glitch {
+            animation: glitch 1s linear infinite;
+            text-shadow: 2px 0 var(--danger-red), -2px 0 #00ffff;
         }
 
-        .icon:hover {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+            62% { transform: translate(0,0) skew(5deg); }
         }
 
-        .icon svg {
-            width: 42px;
-            height: 42px;
-            margin-bottom: 8px;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
-        }
-
-        /* Windows */
         .window {
             position: absolute;
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            background: rgba(0, 5, 0, 0.95);
+            border: 1px solid var(--hacker-green);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+            border-radius: 2px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            z-index: 10;
-            animation: openWindow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            transition: width 0.1s, height 0.1s;
-        }
-
-        @keyframes openWindow {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
         }
 
         .window-header {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 10px 16px;
+            background: var(--hacker-green);
+            color: black;
+            padding: 2px 10px;
+            font-weight: 900;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            cursor: move;
+            font-size: 11px;
+            letter-spacing: 1px;
         }
-
-        .window-title {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .window-controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .control-btn {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .control-btn:hover { opacity: 0.8; }
-        .btn-close { background: #ff5f57; }
-        .btn-min { background: #febc2e; }
-        .btn-max { background: #28c840; }
 
         .window-content {
-            flex: 1;
-            padding: 0;
-            overflow: auto;
-            background: white;
+            padding: 12px;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
-        /* Dock */
-        #dock-container {
-            position: absolute;
-            bottom: 15px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            z-index: 1000;
+        .warning-text {
+            color: var(--danger-red);
+            font-weight: bold;
+            animation: blink 0.4s infinite;
         }
 
-        #dock {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
         }
 
-        .dock-item {
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .dock-item:hover {
-            transform: scale(1.4) translateY(-10px);
-        }
-
-        .dock-item::after {
-            content: attr(data-label);
-            position: absolute;
-            top: -40px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            white-space: nowrap;
-            display: none;
-        }
-
-        .dock-item:hover::after { display: block; }
-
-        /* Start Menu */
-        #start-menu {
-            position: absolute;
-            bottom: 75px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            width: 450px;
-            height: 500px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(25px);
-            border-radius: 18px;
-            border: 1px solid var(--glass-border);
-            z-index: 999;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            display: none;
-            flex-direction: column;
-            padding: 24px;
-            transition: all 0.3s;
-        }
-
-        #start-menu.active {
-            display: flex;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Widgets & App Styles */
-        .terminal-body {
-            background: #0f172a;
-            color: #38bdf8;
-            font-family: 'Fira Code', monospace;
-            padding: 15px;
-            height: 100%;
-        }
-
-        .browser-bar {
-            background: #f1f5f9;
-            padding: 8px 12px;
-            display: flex;
-            gap: 10px;
-            border-bottom: 1px solid #cbd5e1;
-        }
-
-        .browser-input {
-            flex: 1;
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid #cbd5e1;
-            font-size: 0.8rem;
-            outline: none;
-        }
-
-        .status-bar {
-            position: absolute;
-            top: 0;
-            width: 100%;
-            height: 28px;
-            background: rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 0 15px;
-            color: white;
-            font-size: 0.75rem;
-            font-weight: 500;
-            z-index: 500;
-        }
-
-        /* Context Menu */
-        #context-menu {
+        /* Hiệu ứng nhiễu TV cũ */
+        .noise {
             position: fixed;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            padding: 6px;
-            min-width: 180px;
-            display: none;
-            z-index: 2000;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            opacity: .05;
+            z-index: 1000;
+            background: url('https://media.giphy.com/media/oEI9uWUicG7S/giphy.gif');
         }
 
-        .menu-item {
-            padding: 10px 14px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #334155;
+        .btn-hacker {
+            border: 1px solid var(--hacker-green);
+            padding: 8px 20px;
+            margin-top: 15px;
+            background: transparent;
+            color: var(--hacker-green);
+            font-family: 'Fira Code', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s;
         }
 
-        .menu-item:hover { background: #f1f5f9; color: var(--accent); }
+        .btn-hacker:hover {
+            background: var(--hacker-green);
+            color: black;
+            box-shadow: 0 0 10px var(--hacker-green);
+        }
+
+        .shake {
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px); }
+            50% { transform: translate(-2px, -1px); }
+            100% { transform: translate(1px, 1px); }
+        }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;"> <!-- Chặn chuột phải hoàn toàn -->
 
-    <div class="status-bar">
-        <span id="top-clock">12:00</span>
-    </div>
+    <div class="noise"></div>
+    <canvas id="matrix-canvas"></canvas>
 
     <div id="desktop">
-        <!-- Icons -->
-        <div class="icon" ondblclick="openApp('terminal')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-            <span>Terminal</span>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold glitch uppercase">Hệ thống đã bị chiếm quyền kiểm soát</h1>
+            <p class="text-sm opacity-80 mt-2">> Root access granted: 100%</p>
+            <p class="text-sm opacity-80">> Kernel exploit successful...</p>
         </div>
-        <div class="icon" ondblclick="openApp('browser')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            <span>Trình duyệt</span>
-        </div>
-        <div class="icon" ondblclick="openApp('calc')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><line x1="8" y1="10" x2="8" y2="10"></line><line x1="12" y1="10" x2="12" y2="10"></line><line x1="16" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="8" y2="14"></line><line x1="12" y1="14" x2="12" y2="14"></line><line x1="8" y1="18" x2="8" y2="18"></line><line x1="12" y1="18" x2="12" y2="18"></line></svg>
-            <span>Máy tính</span>
-        </div>
-    </div>
 
-    <div id="start-menu">
-        <h2 class="text-xl font-bold mb-4 text-slate-800">GeminiOS 2.0</h2>
-        <div class="grid grid-cols-4 gap-4">
-            <div class="flex flex-col items-center gap-2 p-2 hover:bg-slate-100 rounded-lg cursor-pointer" onclick="openApp('terminal'); toggleStartMenu()">
-                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></div>
-                <span class="text-[10px] font-medium">Terminal</span>
-            </div>
-            <div class="flex flex-col items-center gap-2 p-2 hover:bg-slate-100 rounded-lg cursor-pointer" onclick="openApp('browser'); toggleStartMenu()">
-                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line></svg></div>
-                <span class="text-[10px] font-medium">Web</span>
-            </div>
-        </div>
-        <div class="mt-auto pt-4 border-t flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-slate-300"></div>
-                <span class="text-sm font-semibold">Người dùng</span>
-            </div>
-            <div class="p-2 hover:bg-red-100 rounded-full text-red-500 cursor-pointer" title="Tắt máy" onclick="location.reload()">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+        <div class="window" style="top: 120px; left: 40px; width: 420px;">
+            <div class="window-header"><span>DỮ_LIỆU_ĐANG_TẢI_LÊN_MÁY_CHỦ_TỘI_PHẠM</span></div>
+            <div class="window-content">
+                <div class="flex justify-between mb-1">
+                    <span>PROGRESS:</span>
+                    <span id="percent-text">0%</span>
+                </div>
+                <div class="w-full bg-black h-2 border border-green-500/50">
+                    <div id="progress-bar" class="bg-green-500 h-full w-0 shadow-[0_0_10px_#0f0]"></div>
+                </div>
+                <div id="file-stream" class="mt-4 text-[10px] text-green-300 h-32 overflow-hidden font-light italic"></div>
             </div>
         </div>
-    </div>
 
-    <div id="dock-container">
-        <div id="dock">
-            <div class="dock-item" data-label="Bắt đầu" onclick="toggleStartMenu()">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="#3b82f6"><path d="M0 0h11.25v11.25H0V0zm12.75 0H24v11.25H12.75V0zM0 12.75h11.25V24H0V12.75zm12.75 0H24V24H12.75V12.75z"/></svg>
+        <div class="window" style="top: 80px; right: 40px; width: 300px;">
+            <div class="window-header"><span>THIẾT_BỊ_TRUY_CẬP</span></div>
+            <div class="window-content">
+                <div class="mb-2">IP: <span id="fake-ip" class="text-white">...</span></div>
+                <div class="mb-2">PROXY: <span class="text-yellow-400">RUSSIAN_FEDERATION_X7</span></div>
+                <div class="warning-text text-[10px] mt-4">CAM TRƯỚC ĐÃ ĐƯỢC KÍCH HOẠT</div>
             </div>
-            <div class="w-[1px] h-8 bg-white/20 mx-1"></div>
-            <div class="dock-item" data-label="Trình duyệt" onclick="openApp('browser')">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            </div>
-            <div class="dock-item" data-label="Terminal" onclick="openApp('terminal')">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline></svg>
-            </div>
-            <div class="dock-item" data-label="Ghi chú" onclick="openApp('notepad')">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+        </div>
+
+        <div class="window" style="bottom: 15%; left: 50%; transform: translateX(-50%); width: 450px;">
+            <div class="window-header"><span>TRÌNH_CHẶN_XÓA_DỮ_LIỆU</span></div>
+            <div class="window-content text-center">
+                <p class="text-red-500 font-bold mb-2">PHÁT HIỆN HÀNH VI TẮT MÁY</p>
+                <p class="text-[10px] opacity-70 mb-4">Mọi nỗ lực ngăn chặn lúc này sẽ dẫn đến việc mã hóa toàn bộ dữ liệu vĩnh viễn.</p>
+                <button class="btn-hacker" onclick="startPanic()">Dừng tiến trình xóa (Failsafe)</button>
             </div>
         </div>
     </div>
 
-    <div id="context-menu">
-        <div class="menu-item" onclick="location.reload()">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"/></svg>
-            Làm mới
-        </div>
-        <div class="menu-item">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/></svg>
-            Thay hình nền
-        </div>
-        <hr class="my-1 border-slate-100">
-        <div class="menu-item" onclick="openApp('terminal')">Mở Terminal</div>
-    </div>
+    <!-- Âm thanh nhiễu giả lập -->
+    <audio id="static-audio" loop>
+        <source src="https://www.soundjay.com/tv/static-noise-01.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
-        let zIndexCounter = 1000;
-        const startMenu = document.getElementById('start-menu');
-        const contextMenu = document.getElementById('context-menu');
-        const topClock = document.getElementById('top-clock');
+        // Matrix Effect
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const alphabet = '01';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const rainDrops = Array(Math.floor(columns)).fill(1);
 
-        function updateClock() {
-            const now = new Date();
-            topClock.textContent = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        function toggleStartMenu() {
-            startMenu.classList.toggle('active');
-        }
-
-        function openApp(type) {
-            const id = 'win-' + Math.random().toString(36).substr(2, 9);
-            let title = '';
-            let content = '';
-            let w = '600px', h = '400px';
-
-            switch(type) {
-                case 'terminal':
-                    title = 'Terminal';
-                    content = `<div class="terminal-body" id="term-${id}">GeminiOS Bash v2.0<br>C:\\Users\\Guest> <input type="text" class="bg-transparent border-none outline-none text-sky-400 w-3/4" onkeydown="handleTerminal(event, '${id}')" autofocus></div>`;
-                    break;
-                case 'browser':
-                    title = 'Trình duyệt';
-                    content = `
-                        <div class="flex flex-col h-full">
-                            <div class="browser-bar">
-                                <div class="flex gap-2">
-                                    <div class="w-3 h-3 rounded-full bg-slate-300"></div>
-                                    <div class="w-3 h-3 rounded-full bg-slate-300"></div>
-                                </div>
-                                <input type="text" class="browser-input" value="https://google.com" onkeydown="if(event.key==='Enter') searchWeb('${id}', this.value)">
-                            </div>
-                            <div class="flex-1 p-8 bg-white overflow-auto text-center" id="web-content-${id}">
-                                <h1 class="text-4xl font-bold mb-4 mt-12 text-blue-600">Google</h1>
-                                <input type="text" class="w-full max-w-lg p-3 border rounded-full shadow-sm outline-none px-6" placeholder="Tìm kiếm trên Google hoặc nhập một URL" onkeydown="if(event.key==='Enter') searchWeb('${id}', this.value)">
-                            </div>
-                        </div>
-                    `;
-                    break;
-                case 'notepad':
-                    title = 'Ghi chú';
-                    content = `<textarea class="w-full h-full p-4 outline-none resize-none font-sans" placeholder="Bắt đầu viết..."></textarea>`;
-                    break;
-                case 'calc':
-                    title = 'Máy tính';
-                    w = '300px'; h = '420px';
-                    content = `<div class="p-4 h-full flex flex-col bg-slate-100">
-                        <div id="calc-display-${id}" class="text-right text-3xl font-light mb-4 p-4 bg-white rounded-lg shadow-inner truncate">0</div>
-                        <div class="grid grid-cols-4 gap-2 flex-1">
-                            ${['C','/','*','-','7','8','9','+','4','5','6','=','1','2','3','0'].map(k => 
-                                `<button onclick="calcInput('${id}', '${k}')" class="bg-white hover:bg-blue-50 rounded-lg font-medium shadow-sm active:scale-95 transition-all">${k}</button>`
-                            ).join('')}
-                        </div>
-                    </div>`;
-                    break;
-            }
-
-            const win = document.createElement('div');
-            win.className = 'window';
-            win.id = id;
-            win.style.width = w;
-            win.style.height = h;
-            win.style.left = (150 + (zIndexCounter - 1000) * 30) + 'px';
-            win.style.top = (100 + (zIndexCounter - 1000) * 30) + 'px';
-            win.style.zIndex = ++zIndexCounter;
-
-            win.innerHTML = `
-                <div class="window-header" onmousedown="dragStart(event, '${id}')">
-                    <div class="window-title">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        ${title}
-                    </div>
-                    <div class="window-controls">
-                        <div class="control-btn btn-min"></div>
-                        <div class="control-btn btn-max" onclick="maximizeWin('${id}')"></div>
-                        <div class="control-btn btn-close" onclick="closeApp('${id}')"></div>
-                    </div>
-                </div>
-                <div class="window-content">${content}</div>
-            `;
-
-            document.body.appendChild(win);
-            win.addEventListener('mousedown', () => {
-                win.style.zIndex = ++zIndexCounter;
-            });
-        }
-
-        function closeApp(id) {
-            const win = document.getElementById(id);
-            win.style.transform = 'scale(0.9)';
-            win.style.opacity = '0';
-            setTimeout(() => win.remove(), 200);
-        }
-
-        function maximizeWin(id) {
-            const win = document.getElementById(id);
-            if(win.style.width === '100%') {
-                win.style.width = '600px'; win.style.height = '400px';
-                win.style.top = '100px'; win.style.left = '150px';
-            } else {
-                win.style.width = '100%'; win.style.height = 'calc(100% - 28px)';
-                win.style.top = '28px'; win.style.left = '0';
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) rainDrops[i] = 0;
+                rainDrops[i]++;
             }
         }
+        setInterval(draw, 40);
 
-        // Drag Logic
-        let activeWin = null, offsetX, offsetY;
-        function dragStart(e, id) {
-            if(e.target.closest('.window-controls')) return;
-            activeWin = document.getElementById(id);
-            offsetX = e.clientX - activeWin.offsetLeft;
-            offsetY = e.clientY - activeWin.offsetTop;
-            document.addEventListener('mousemove', dragMove);
-            document.addEventListener('mouseup', dragEnd);
-        }
-        function dragMove(e) {
-            if(activeWin) {
-                activeWin.style.left = (e.clientX - offsetX) + 'px';
-                activeWin.style.top = (e.clientY - offsetY) + 'px';
+        // Chặn phím tắt (F12, Ctrl+U, Ctrl+Shift+I, etc.)
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 85 || e.keyCode == 83 || e.shiftKey && e.keyCode == 73))) {
+                return false;
             }
-        }
-        function dragEnd() { activeWin = null; }
+        };
 
-        // Apps Logic
-        function searchWeb(id, query) {
-            const container = document.getElementById(`web-content-${id}`);
-            container.innerHTML = `
-                <div class="p-6 text-left">
-                    <p class="text-sm text-slate-500 mb-2">Khoảng 1.230.000 kết quả cho (${query})</p>
-                    <div class="mb-6">
-                        <h3 class="text-blue-700 text-xl font-medium hover:underline cursor-pointer">${query} - Wikipedia tiếng Việt</h3>
-                        <p class="text-sm text-slate-600">Đây là kết quả tìm kiếm giả lập cho nội dung: <b>${query}</b>. GeminiOS cho phép bạn duyệt web ảo ngay trong hệ thống.</p>
-                    </div>
-                    <div class="mb-6">
-                        <h3 class="text-blue-700 text-xl font-medium hover:underline cursor-pointer">Tin tức mới nhất về ${query}</h3>
-                        <p class="text-sm text-slate-600">Cập nhật lúc ${new Date().toLocaleTimeString()}...</p>
-                    </div>
-                </div>
-            `;
-        }
+        // Fake IP
+        document.getElementById('fake-ip').innerText = `14.226.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
 
-        function handleTerminal(e, id) {
-            if (e.key === 'Enter') {
-                const cmd = e.target.value.toLowerCase();
-                const term = document.getElementById(`term-${id}`);
-                const line = document.createElement('div');
-                line.className = "mb-2";
-                let res = '';
-                if(cmd === 'help') res = "Lệnh: ls, clear, help, neofetch, exit";
-                else if(cmd === 'ls') res = "Desktop/  Documents/  Pictures/  System32/";
-                else if(cmd === 'neofetch') res = "<b>GeminiOS 2.0</b><br>OS: Gemini Linux x86_64<br>Kernel: 5.15.0-v2<br>Shell: bash 5.1<br>Resolution: 1920x1080<br>DE: GeminiGlass";
-                else if(cmd === 'clear') { term.innerHTML = `C:\\Users\\Guest> <input type="text" class="bg-transparent border-none outline-none text-sky-400 w-3/4" onkeydown="handleTerminal(event, '${id}')" autofocus>`; return; }
-                else res = `Lệnh '${cmd}' không tìm thấy.`;
+        // Progress & Files
+        let prog = 0;
+        const fileNames = ['DCIM_PRIVATE_001.jpg', 'Giao_dich_ngan_hang.pdf', 'Passwords_Browser.txt', 'History_Chrome.db', 'Keylog_Output.log', 'Wallet_PrivateKey.dat'];
+        
+        setInterval(() => {
+            if (prog < 100) {
+                prog += Math.random() * 0.5;
+                document.getElementById('progress-bar').style.width = prog + '%';
+                document.getElementById('percent-text').innerText = Math.floor(prog) + '%';
                 
-                line.innerHTML = `<span class="text-white">C:\\Users\\Guest> ${cmd}</span><br>${res}`;
-                term.insertBefore(line, e.target.parentElement);
-                e.target.value = '';
+                if (Math.random() > 0.8) {
+                    const fs = document.getElementById('file-stream');
+                    const file = fileNames[Math.floor(Math.random() * fileNames.length)];
+                    fs.innerHTML = `> EXFILTRATING: ${file}<br>` + fs.innerHTML;
+                }
             }
+        }, 150);
+
+        function startPanic() {
+            // Kích hoạt âm thanh khi tương tác
+            const audio = document.getElementById('static-audio');
+            audio.play().catch(() => {});
+            
+            document.body.classList.add('shake');
+            document.body.style.background = '#200';
+            
+            setTimeout(() => {
+                alert("CRITICAL ERROR: Dữ liệu đang được gửi tới máy chủ ẩn danh. Không thể dừng tiến trình.");
+                if(confirm("Bạn có muốn format ổ đĩa để cứu vãn phần còn lại?")) {
+                    alert("ĐANG FORMAT Ổ C... \n\n (Just kidding! Bạn đã bị troll rồi!)");
+                    location.reload();
+                }
+            }, 2000);
         }
 
-        let calcData = {};
-        function calcInput(id, val) {
-            const disp = document.getElementById(`calc-display-${id}`);
-            if(!calcData[id]) calcData[id] = '';
-            if(val === 'C') calcData[id] = '0';
-            else if(val === '=') {
-                try { calcData[id] = eval(calcData[id]).toString(); } catch { calcData[id] = 'Lỗi'; }
-            } else {
-                if(calcData[id] === '0') calcData[id] = val;
-                else calcData[id] += val;
+        // Tự động bật Fullscreen khi click bất kỳ đâu
+        window.onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => {});
             }
-            disp.innerText = calcData[id];
-        }
-
-        // Global Event Listeners
-        window.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = e.clientX + 'px';
-            contextMenu.style.top = e.clientY + 'px';
-            startMenu.classList.remove('active');
-        });
-
-        window.addEventListener('click', e => {
-            contextMenu.style.display = 'none';
-            if(!e.target.closest('#start-menu') && !e.target.closest('.dock-item')) {
-                startMenu.classList.remove('active');
-            }
-        });
+        };
     </script>
 </body>
 </html>
